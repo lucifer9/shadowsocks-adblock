@@ -240,7 +240,7 @@ object BaseService {
                     "-u",
                     "-b", "127.0.0.1",
                     "-l", DataStore.portProxy.toString(),
-                    "-t", "600",
+                    "-t", "1800",
                     "-c", data.buildShadowsocksConfig().absolutePath))
 
             val acl = data.aclFile
