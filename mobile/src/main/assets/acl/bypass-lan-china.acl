@@ -1,6 +1,9 @@
 [proxy_all]
 
 [bypass_list]
+(^|\.)apple\.com$
+(^|\.)icloud\-content\.com$
+(^|\.)cdn\-apple\.com$
 0.0.0.0/8
 10.0.0.0/8
 100.64.0.0/10
@@ -5102,6 +5105,12 @@
 149.154.168.0/22
 149.154.164.0/22
 109.239.140.0/24
+(^|\.)apple\.co$
+(^|\.)icloud\.com$
+(^|\.)appldnld\.apple\.com$
+(^|\.)itunes\.com$
+(^|\.)itunes\.apple\.com$
+(^|\.)swcdn\.apple\.com$
 (^|\.)4tern\.com$
 (^|\.)adorama\.com$
 (^|\.)akiba-web\.com$
