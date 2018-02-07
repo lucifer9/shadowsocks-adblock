@@ -68,7 +68,7 @@ object LocalDnsService {
                         .put("BindAddress", "127.0.0.1:" + DataStore.portLocalDns)
                         .put("RedirectIPv6Record", true)
                         .put("DomainBase64Decode", false)
-                        .put("HostsFile", "hosts")
+                        .put("HostsFile", "/sdcard/hosts")
                         .put("MinimumTTL", 120)
                         .put("CacheSize", 4096)
                 val remoteDns = JSONArray(profile.remoteDns.split(",")
