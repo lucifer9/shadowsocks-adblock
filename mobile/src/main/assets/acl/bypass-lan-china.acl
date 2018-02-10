@@ -1,8 +1,6 @@
 [proxy_all]
 
 [bypass_list]
-(^|\.)apple\.com$
-(^|\.)icloud\-content\.com$
 (^|\.)cdn\-apple\.com$
 0.0.0.0/8
 10.0.0.0/8
