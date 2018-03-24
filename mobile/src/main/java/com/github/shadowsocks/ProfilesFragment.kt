@@ -123,7 +123,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener {
         private var adView: AdView? = null
 
         init {
-            edit.setOnClickListener { startConfig(item.id) }
+            edit.setOnClickListener { startConfig(item) }
             TooltipCompat.setTooltipText(edit, edit.contentDescription)
             itemView.setOnClickListener(this)
             val share = itemView.findViewById<View>(R.id.share)
@@ -307,8 +307,10 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener {
 
     private val clipboard by lazy { requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
 
-    private fun startConfig(id: Int) = startActivity(Intent(context, ProfileConfigActivity::class.java)
-            .putExtra(Action.EXTRA_PROFILE_ID, id))
+    private fun startConfig(profile: Profile) {
+        profile.serialize()
+        startActivity(Intent(context, ProfileConfigActivity::class.java).putExtra(Action.EXTRA_PROFILE_ID, profile.id))
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
             inflater.inflate(R.layout.layout_list, container, false)
@@ -366,20 +368,20 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener {
             }
             R.id.action_import -> {
                 try {
-                    val profiles = Profile.findAll(clipboard.primaryClip.getItemAt(0).text).toList()
+                    val profiles = Profile.findAll(clipboard.primaryClip!!.getItemAt(0).text).toList()
                     if (profiles.isNotEmpty()) {
                         profiles.forEach { ProfileManager.createProfile(it) }
                         Snackbar.make(requireActivity().findViewById(R.id.snackbar), R.string.action_import_msg,
                                 Snackbar.LENGTH_LONG).show()
                         return true
                     }
-                } catch (_: IndexOutOfBoundsException) { }
+                } catch (_: Exception) { }
                 Snackbar.make(requireActivity().findViewById(R.id.snackbar), R.string.action_import_err,
                         Snackbar.LENGTH_LONG).show()
                 true
             }
             R.id.action_manual_settings -> {
-                startConfig(ProfileManager.createProfile().id)
+                startConfig(ProfileManager.createProfile())
                 true
             }
             R.id.action_export -> {
