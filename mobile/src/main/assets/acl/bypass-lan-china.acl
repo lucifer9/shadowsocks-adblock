@@ -1,7 +1,6 @@
 [proxy_all]
 
 [bypass_list]
-(^|\.)cdn\-apple\.com$
 0.0.0.0/8
 10.0.0.0/8
 100.64.0.0/10
@@ -5113,7 +5112,6 @@
 69.65.19.160
 72.52.81.22
 85.17.73.31
-(^|\.)services\.googleapis\.cn$
 (^|\.)apple\.co$
 (^|\.)icloud\.com$
 (^|\.)appldnld\.apple\.com$
@@ -6915,6 +6913,7 @@
 (^|\.)google\.co\.ma$
 (^|\.)google\.co\.uk$
 (^|\.)google\.com$
+(^|\.)google\.com\.hk$
 (^|\.)google\.de$
 (^|\.)google\.dj$
 (^|\.)google\.dk$
@@ -6925,6 +6924,7 @@
 (^|\.)google\.gg$
 (^|\.)google\.gl$
 (^|\.)google\.gr$
+(^|\.)google\.hk$
 (^|\.)google\.ie$
 (^|\.)google\.is$
 (^|\.)google\.it$
