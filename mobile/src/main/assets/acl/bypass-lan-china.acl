@@ -1,6 +1,7 @@
 [proxy_all]
 
 [bypass_list]
+(^|\.)coredump\.3322\.org$
 0.0.0.0/8
 10.0.0.0/8
 100.64.0.0/10
