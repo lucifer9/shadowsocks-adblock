@@ -34,7 +34,7 @@ import android.util.Log
 import com.github.shadowsocks.App.Companion.app
 import com.github.shadowsocks.R
 import com.github.shadowsocks.acl.Acl
-import com.github.shadowsocks.acl.AclSyncJob
+import com.github.shadowsocks.acl.AclSyncer
 import com.github.shadowsocks.aidl.IShadowsocksService
 import com.github.shadowsocks.aidl.IShadowsocksServiceCallback
 import com.github.shadowsocks.database.Profile
@@ -50,11 +50,11 @@ import okhttp3.Request
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
-import java.net.*
+import java.net.InetAddress
+import java.net.UnknownHostException
 import java.security.MessageDigest
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.reflect.KClass
 
 /**
  * This object uses WeakMap to simulate the effects of multi-inheritance.
@@ -407,7 +407,7 @@ object BaseService {
 
                     startNativeProcesses()
 
-                    if (profile.route !in arrayOf(Acl.ALL, Acl.CUSTOM_RULES)) AclSyncJob.schedule(profile.route)
+                    if (profile.route !in arrayOf(Acl.ALL, Acl.CUSTOM_RULES)) AclSyncer.schedule(profile.route)
 
                     data.changeState(CONNECTED)
                 } catch (_: UnknownHostException) {
@@ -427,7 +427,7 @@ object BaseService {
     internal fun register(instance: Interface) = instances.put(instance, Data(instance))
 
     val usingVpnMode: Boolean get() = DataStore.serviceMode == Key.modeVpn
-    val serviceClass: KClass<out Any> get() = when (DataStore.serviceMode) {
+    val serviceClass get() = when (DataStore.serviceMode) {
         Key.modeProxy -> ProxyService::class
         Key.modeVpn -> VpnService::class
         Key.modeTransproxy -> TransproxyService::class
