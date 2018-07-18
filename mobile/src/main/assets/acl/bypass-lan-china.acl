@@ -1,7 +1,6 @@
 [proxy_all]
 
 [bypass_list]
-(^|alt[0-9]{1}-)mtalk.google.com$
 (^|\.)coredump\.3322\.org$
 (^|\.)dujie\.name$
 0.0.0.0/8
