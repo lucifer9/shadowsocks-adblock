@@ -38,10 +38,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.core.view.GravityCompat
+import androidx.core.view.updateLayoutParams
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.preference.PreferenceDataStore
 import com.crashlytics.android.Crashlytics
@@ -61,6 +63,7 @@ import com.github.shadowsocks.widget.StatsBar
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
 import java.util.*
+import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity(), ShadowsocksConnection.Interface, OnPreferenceDataStoreChangeListener,
         NavigationView.OnNavigationItemSelectedListener {
@@ -81,7 +84,11 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Interface, OnPre
     private lateinit var navigation: NavigationView
 
     val snackbar by lazy { findViewById<View>(R.id.snackbar) }
-    fun snackbar(text: CharSequence = "") = Snackbar.make(snackbar, text, Snackbar.LENGTH_LONG)
+    fun snackbar(text: CharSequence = "") = Snackbar.make(snackbar, text, Snackbar.LENGTH_LONG).apply {
+        view.updateLayoutParams<CoordinatorLayout.LayoutParams> {
+            bottomMargin += snackbar.measuredHeight - fab.top - fab.translationY.roundToInt()
+        }
+    }
 
     private val customTabsIntent by lazy {
         CustomTabsIntent.Builder()
@@ -135,10 +142,13 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Interface, OnPre
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode != REQUEST_CONNECT) super.onActivityResult(requestCode, resultCode, data)
-        else if (resultCode == Activity.RESULT_OK) app.startService() else {
-            snackbar().setText(R.string.vpn_permission_denied).show()
-            Crashlytics.log(Log.ERROR, TAG, "Failed to start VpnService from onActivityResult: $data")
+        when {
+            requestCode != REQUEST_CONNECT -> super.onActivityResult(requestCode, resultCode, data)
+            resultCode == Activity.RESULT_OK -> app.startService()
+            else -> {
+                snackbar().setText(R.string.vpn_permission_denied).show()
+                Crashlytics.log(Log.ERROR, TAG, "Failed to start VpnService from onActivityResult: $data")
+            }
         }
     }
 
@@ -187,7 +197,7 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Interface, OnPre
     }
     private fun handleShareIntent(intent: Intent) {
         val sharedStr = when (intent.action) {
-            Intent.ACTION_VIEW -> intent.data.toString()
+            Intent.ACTION_VIEW -> intent.data?.toString()
             NfcAdapter.ACTION_NDEF_DISCOVERED -> {
                 val rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
                 if (rawMsgs != null && rawMsgs.isNotEmpty()) String((rawMsgs[0] as NdefMessage).records[0].payload)

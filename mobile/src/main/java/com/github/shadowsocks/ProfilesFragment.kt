@@ -85,12 +85,11 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener {
 
     @SuppressLint("ValidFragment")
     class QRCodeDialog() : DialogFragment() {
-
         constructor(url: String) : this() {
             arguments = bundleOf(Pair(KEY_URL, url))
         }
 
-        private val url get() = arguments!!.getString(KEY_URL)
+        private val url get() = arguments?.getString(KEY_URL)!!
         private val nfcShareItem by lazy { url.toByteArray() }
         private var adapter: NfcAdapter? = null
 
@@ -336,8 +335,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener {
         profilesList.itemAnimator = animator
         profilesList.adapter = profilesAdapter
         instance = this
-        undoManager = UndoSnackbarManager((activity as MainActivity).snackbar,
-                profilesAdapter::undo, profilesAdapter::commit)
+        undoManager = UndoSnackbarManager(activity as MainActivity, profilesAdapter::undo, profilesAdapter::commit)
         ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN,
         ItemTouchHelper.START or ItemTouchHelper.END) {
             override fun getSwipeDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int =
@@ -425,7 +423,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener {
                 var success = false
                 val activity = activity as MainActivity
                 for (uri in data!!.datas) try {
-                    Profile.parseJson(activity.contentResolver.openInputStream(uri).bufferedReader().readText(),
+                    Profile.parseJson(activity.contentResolver.openInputStream(uri)!!.bufferedReader().readText(),
                             feature).forEach {
                         ProfileManager.createProfile(it)
                         success = true
@@ -439,7 +437,7 @@ class ProfilesFragment : ToolbarFragment(), Toolbar.OnMenuItemClickListener {
             REQUEST_EXPORT_PROFILES -> {
                 val profiles = ProfileManager.getAllProfiles()
                 if (profiles != null) try {
-                    requireContext().contentResolver.openOutputStream(data!!.data).bufferedWriter().use {
+                    requireContext().contentResolver.openOutputStream(data?.data!!)!!.bufferedWriter().use {
                         it.write(JSONArray(profiles.map { it.toJson() }.toTypedArray()).toString(2))
                     }
                 } catch (e: Exception) {
