@@ -5,7 +5,7 @@ jobs:
     docker:
       - image: shadowsocks/shadowsocks-android:circleci
     environment:
-      JVM_OPTS: -Xmx3.5g
+      JVM_OPTS: -Xmx3.5g -Dkotlin.incremental=false
     steps:
       - checkout
       - run: git submodule update --init --recursive
