@@ -5,18 +5,15 @@ jobs:
     docker:
       - image: shadowsocks/shadowsocks-android:circleci
     environment:
-      JVM_OPTS: -Xmx3.5g -Dkotlin.incremental=false
+      JVM_OPTS: -Xmx3.5g -Dorg.gradle.daemon=false -Dkotlin.compiler.execution.strategy="in-process"
     steps:
       - checkout
       - run: git submodule update --init --recursive
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}
       - run:
-          name: Run Build
-          command: ./gradlew assembleDebug
-      - run:
-          name: Run Tests
-          command: ./gradlew check
+          name: Run Build and Tests
+          command: ./gradlew assembleDebug check
       - save_cache:
           paths:
             - ~/.gradle
