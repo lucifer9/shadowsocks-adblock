@@ -80,14 +80,14 @@ class ProxyInstance(val profile: Profile, private val route: String = profile.ro
         if (route == Acl.CUSTOM_RULES) Acl.save(Acl.CUSTOM_RULES, Acl.customRules.flatten(10))
 
         // it's hard to resolve DNS on a specific interface so we'll do it here
-        if (!profile.host.isNumericAddress()) {
+        if (profile.host.parseNumericAddress() == null) {
             thread("ProxyInstance-resolve") {
                 // A WAR fix for Huawei devices that UnknownHostException cannot be caught correctly
                 try {
                     profile.host = InetAddress.getByName(profile.host).hostAddress ?: ""
                 } catch (_: UnknownHostException) { }
             }.join(10 * 1000)
-            if (!profile.host.isNumericAddress()) throw UnknownHostException()
+            if (profile.host.parseNumericAddress() == null) throw UnknownHostException()
         }
     }
 
@@ -100,13 +100,7 @@ class ProxyInstance(val profile: Profile, private val route: String = profile.ro
 
         this.configFile = configFile
         val config = profile.toJson()
-        if (pluginPath != null) {
-            val pluginCmd = arrayListOf(pluginPath!!)
-            if (DataStore.tcpFastOpen) pluginCmd.add("--fast-open")
-            config
-                    .put("plugin", Commandline.toString(service.buildAdditionalArguments(pluginCmd)))
-                    .put("plugin_opts", plugin.toString())
-        }
+        if (pluginPath != null) config.put("plugin", pluginPath).put("plugin_opts", plugin.toString())
         configFile.writeText(config.toString())
 
         val cmd = service.buildAdditionalArguments(arrayListOf(

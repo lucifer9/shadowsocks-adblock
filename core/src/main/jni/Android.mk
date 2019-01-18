@@ -312,26 +312,6 @@ LOCAL_LDLIBS := -llog
 include $(BUILD_SHARED_EXECUTABLE)
 
 ########################################################
-## jni-helper
-########################################################
-
-include $(CLEAR_VARS)
-
-LOCAL_MODULE:= jni-helper
-
-LOCAL_CFLAGS := -std=c++11
-
-LOCAL_C_INCLUDES:= $(LOCAL_PATH)/libancillary
-
-LOCAL_SRC_FILES:= jni-helper.cpp
-
-LOCAL_LDLIBS := -ldl -llog
-
-LOCAL_STATIC_LIBRARIES := cpufeatures libancillary
-
-include $(BUILD_SHARED_LIBRARY)
-
-########################################################
 ## tun2socks
 ########################################################
 
@@ -477,7 +457,3 @@ libpcre_src_files := \
 LOCAL_SRC_FILES := $(addprefix pcre/, $(libpcre_src_files)) $(LOCAL_PATH)/patch/pcre/pcre_chartables.c
 
 include $(BUILD_STATIC_LIBRARY)
-
-# Import cpufeatures
-$(call import-module,android/cpufeatures)
-
