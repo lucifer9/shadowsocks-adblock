@@ -27,10 +27,7 @@ import com.github.shadowsocks.preference.DataStore
 import java.io.File
 
 class TransproxyService : Service(), LocalDnsService.Interface {
-    init {
-        BaseService.register(this)
-    }
-
+    override val data = BaseService.Data(this)
     override val tag: String get() = "ShadowsocksTransproxyService"
     override fun createNotification(profileName: String): ServiceNotification =
             ServiceNotification(this, profileName, "service-transproxy", true)
@@ -47,7 +44,8 @@ class TransproxyService : Service(), LocalDnsService.Interface {
                 "-u",
                 "-l", DataStore.portLocalDns.toString(),    // ss-tunnel listens on the same port as overture
                 "-L", proxy.profile.remoteDns.split(",").first().trim() + ":53",
-                "-c", proxy.configFile!!.absolutePath)      // config is already built by BaseService.Interface
+                // config is already built by BaseService.Interface
+                "-c", (data.udpFallback ?: proxy).configFile!!.absolutePath)
         if (DataStore.tcpFastOpen) cmd += "--fast-open"
         data.processes.start(cmd)
     }
@@ -76,5 +74,10 @@ redsocks {
         startRedsocksDaemon()
         super.startNativeProcesses()
         if (data.proxy!!.profile.udpdns) startDNSTunnel()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        data.binder.close()
     }
 }

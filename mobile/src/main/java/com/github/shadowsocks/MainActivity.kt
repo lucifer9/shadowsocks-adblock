@@ -45,7 +45,7 @@ import androidx.preference.PreferenceDataStore
 import com.crashlytics.android.Crashlytics
 import com.github.shadowsocks.acl.CustomRulesFragment
 import com.github.shadowsocks.aidl.IShadowsocksService
-import com.github.shadowsocks.aidl.IShadowsocksServiceCallback
+import com.github.shadowsocks.aidl.ShadowsocksConnection
 import com.github.shadowsocks.aidl.TrafficStats
 import com.github.shadowsocks.bg.BaseService
 import com.github.shadowsocks.bg.Executable
@@ -59,7 +59,7 @@ import com.github.shadowsocks.widget.StatsBar
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
 
-class MainActivity : AppCompatActivity(), ShadowsocksConnection.Interface, OnPreferenceDataStoreChangeListener,
+class MainActivity : AppCompatActivity(), ShadowsocksConnection.Callback, OnPreferenceDataStoreChangeListener,
         NavigationView.OnNavigationItemSelectedListener {
     companion object {
         private const val TAG = "ShadowsocksMainActivity"
@@ -92,25 +92,17 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Interface, OnPre
 
     // service
     var state = BaseService.IDLE
-    override val serviceCallback: IShadowsocksServiceCallback.Stub by lazy {
-        object : IShadowsocksServiceCallback.Stub() {
-            override fun stateChanged(state: Int, profileName: String?, msg: String?) {
-                Core.handler.post { changeState(state, msg, true) }
-            }
-            override fun trafficUpdated(profileId: Long, stats: TrafficStats) {
-                Core.handler.post {
-                    if (profileId == 0L) this@MainActivity.stats.updateTraffic(
-                            stats.txRate, stats.rxRate, stats.txTotal, stats.rxTotal)
-                    if (state != BaseService.STOPPING) {
-                        (supportFragmentManager.findFragmentById(R.id.fragment_holder) as? ToolbarFragment)
-                                ?.onTrafficUpdated(profileId, stats)
-                    }
-                }
-            }
-            override fun trafficPersisted(profileId: Long) {
-                Core.handler.post { ProfilesFragment.instance?.onTrafficPersisted(profileId) }
-            }
+    override fun stateChanged(state: Int, profileName: String?, msg: String?) = changeState(state, msg, true)
+    override fun trafficUpdated(profileId: Long, stats: TrafficStats) {
+        if (profileId == 0L) this@MainActivity.stats.updateTraffic(
+                stats.txRate, stats.rxRate, stats.txTotal, stats.rxTotal)
+        if (state != BaseService.STOPPING) {
+            (supportFragmentManager.findFragmentById(R.id.fragment_holder) as? ToolbarFragment)
+                    ?.onTrafficUpdated(profileId, stats)
         }
+    }
+    override fun trafficPersisted(profileId: Long) {
+        ProfilesFragment.instance?.onTrafficPersisted(profileId)
     }
 
     private fun changeState(state: Int, msg: String? = null, animate: Boolean = false) {
@@ -124,7 +116,7 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Interface, OnPre
 
     private fun toggle() = when {
         state == BaseService.CONNECTED -> Core.stopService()
-        BaseService.usingVpnMode -> {
+        DataStore.serviceMode == Key.modeVpn -> {
             val intent = VpnService.prepare(this)
             if (intent != null) startActivityForResult(intent, REQUEST_CONNECT)
             else onActivityResult(REQUEST_CONNECT, Activity.RESULT_OK, null)
@@ -132,19 +124,18 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Interface, OnPre
         else -> Core.startService()
     }
 
-    override val listenForDeath: Boolean get() = true
+    private val connection = ShadowsocksConnection(true)
     override fun onServiceConnected(service: IShadowsocksService) = changeState(try {
         service.state
     } catch (_: DeadObjectException) {
         BaseService.IDLE
     })
     override fun onServiceDisconnected() = changeState(BaseService.IDLE)
-    override fun binderDied() {
-        super.binderDied()
+    override fun onBinderDied() {
         Core.handler.post {
-            connection.disconnect()
+            connection.disconnect(this)
             Executable.killAll()
-            connection.connect()
+            connection.connect(this, this)
         }
     }
 
@@ -176,7 +167,7 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Interface, OnPre
         fab.setOnClickListener { toggle() }
 
         changeState(BaseService.IDLE)   // reset everything to init state
-        Core.handler.post { connection.connect() }
+        Core.handler.post { connection.connect(this, this) }
         DataStore.publicStore.registerChangeListener(this)
 
         val intent = this.intent
@@ -215,8 +206,8 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Interface, OnPre
     override fun onPreferenceDataStoreChanged(store: PreferenceDataStore, key: String?) {
         when (key) {
             Key.serviceMode -> Core.handler.post {
-                connection.disconnect()
-                connection.connect()
+                connection.disconnect(this)
+                connection.connect(this, this)
             }
         }
     }
@@ -287,7 +278,7 @@ class MainActivity : AppCompatActivity(), ShadowsocksConnection.Interface, OnPre
     override fun onDestroy() {
         super.onDestroy()
         DataStore.publicStore.unregisterChangeListener(this)
-        connection.disconnect()
+        connection.disconnect(this)
         BackupManager(this).dataChanged()
         Core.handler.removeCallbacksAndMessages(null)
     }
