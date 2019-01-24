@@ -27,6 +27,7 @@ import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
 import android.os.DeadObjectException
+import android.os.Handler
 import android.text.format.Formatter
 import android.util.Log
 import android.widget.Toast
@@ -135,7 +136,8 @@ class MainPreferenceFragment : LeanbackPreferenceFragment(), ShadowsocksConnecti
         }
     }
 
-    private val connection = ShadowsocksConnection(true)
+    private val handler = Handler()
+    private val connection = ShadowsocksConnection(handler, true)
     override fun onServiceConnected(service: IShadowsocksService) = changeState(try {
         service.state
     } catch (_: DeadObjectException) {
@@ -143,11 +145,9 @@ class MainPreferenceFragment : LeanbackPreferenceFragment(), ShadowsocksConnecti
     })
     override fun onServiceDisconnected() = changeState(BaseService.IDLE)
     override fun onBinderDied() {
-        Core.handler.post {
-            connection.disconnect(activity)
-            Executable.killAll()
-            connection.connect(activity, this)
-        }
+        connection.disconnect(activity)
+        Executable.killAll()
+        connection.connect(activity, this)
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -159,12 +159,13 @@ class MainPreferenceFragment : LeanbackPreferenceFragment(), ShadowsocksConnecti
         stats = findPreference(Key.controlStats)
         controlImport = findPreference(Key.controlImport)
 
-        val boot = findPreference(Key.isAutoConnect) as SwitchPreference
-        boot.setOnPreferenceChangeListener { _, value ->
-            BootReceiver.enabled = value as Boolean
-            true
+        (findPreference(Key.isAutoConnect) as SwitchPreference).apply {
+            setOnPreferenceChangeListener { _, value ->
+                BootReceiver.enabled = value as Boolean
+                true
+            }
+            isChecked = BootReceiver.enabled
         }
-        boot.isChecked = BootReceiver.enabled
 
         tfo = findPreference(Key.tfo) as SwitchPreference
         tfo.isChecked = DataStore.tcpFastOpen
@@ -189,9 +190,12 @@ class MainPreferenceFragment : LeanbackPreferenceFragment(), ShadowsocksConnecti
         portLocalDns = findPreference(Key.portLocalDns)
         portTransproxy = findPreference(Key.portTransproxy)
         serviceMode.onPreferenceChangeListener = onServiceModeChange
-        findPreference(Key.about).setOnPreferenceClickListener {
-            Toast.makeText(activity, "shadowsocks.org/android", Toast.LENGTH_SHORT).show()
-            true
+        findPreference(Key.about).apply {
+            summary = getString(R.string.about_title, BuildConfig.VERSION_NAME)
+            setOnPreferenceClickListener {
+                Toast.makeText(activity, "https://shadowsocks.org/android", Toast.LENGTH_SHORT).show()
+                true
+            }
         }
 
         tester = ViewModelProviders.of(activity as FragmentActivity).get()
@@ -232,7 +236,7 @@ class MainPreferenceFragment : LeanbackPreferenceFragment(), ShadowsocksConnecti
 
     override fun onPreferenceDataStoreChanged(store: PreferenceDataStore, key: String?) {
         when (key) {
-            Key.serviceMode -> Core.handler.post {
+            Key.serviceMode -> handler.post {
                 connection.disconnect(activity)
                 connection.connect(activity, this)
             }
